@@ -18,6 +18,7 @@
   },
   "homepage": "hhttps://github.com/camposmm/cse341-code-student#readme",
   "dependencies": {
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
