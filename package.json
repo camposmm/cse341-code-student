@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ezgdev/cse341-learning-academy.git"
+    "url": "git+https://github.com/camposmm/cse341-code-student"
   },
   "author": "Ezequiel Gimenez, Marcos dos Santos, Carlos Medina, Ibraim Gonzalez",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ezgdev/cse341-learning-academy/issues"
+    "url": "https://github.com/camposmm/cse341-code-student"
   },
-  "homepage": "https://github.com/ezgdev/cse341-learning-academy#readme",
+  "homepage": "hhttps://github.com/camposmm/cse341-code-student#readme",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
