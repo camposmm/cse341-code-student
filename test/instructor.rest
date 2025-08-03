@@ -1,0 +1,30 @@
+### GET all instructors
+GET http://localhost:3000/instructor
+
+### GET instructor by id
+GET http://localhost:3000/instructor/68882f9b81a46581d5d8b762
+
+### CREATE instructor
+POST http://localhost:3000/instructor HTTP/1.1
+content-type: application/json
+
+{
+  "firstName": "Juan",
+  "lastName": "García",
+  "email": "juan.garcia@example.com",
+  "specialty": "Frontend Development"
+}
+
+### UPDATE instructor
+PUT http://localhost:3000/instructor/68882f9b81a46581d5d8b762 HTTP/1.1
+content-type: application/json
+
+{
+  "firstName": "María",
+  "lastName": "Pérez",
+  "email": "maria.perez@example.com",
+  "specialty": "Backend Development"
+}
+
+### DELETE instructor
+DELETE http://localhost:3000/instructor/688e624d3d912d87235b0d73 HTTP/1.1

@@ -1,0 +1,33 @@
+### Enroll a student in a course
+POST http://localhost:3000/api/enrollments
+Content-Type: application/json
+
+{
+  "studentId": "64d2f1bc9a7a4e001e9a1a11",
+  "courseId": "64d2f1bc9a7a4e001e9a1b22"
+}
+
+###
+
+### Drop a course
+DELETE http://localhost:3000/api/enrollments/64d2f1bc9a7a4e001e9a1c33
+
+###
+
+### Get all enrollments for a student
+GET http://localhost:3000/api/enrollments/student/64d2f1bc9a7a4e001e9a1a11
+
+###
+
+### Get all students enrolled in a course
+GET http://localhost:3000/api/enrollments/course/64d2f1bc9a7a4e001e9a1b22
+
+###
+
+### Update course progress
+PATCH http://localhost:3000/api/enrollments/64d2f1bc9a7a4e001e9a1c33/progress
+Content-Type: application/json
+
+{
+  "progress": "completed"
+}
