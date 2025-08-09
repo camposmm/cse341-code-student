@@ -1,18 +1,29 @@
-const express = require('express');
-const router = express.Router();
-const courses = require('../controllers/courseController');
+// routes/course.js
+const router = require('express').Router();
+const controller = require('../controllers/courseController');
 const validate = require('../utilities/course-validation');
-const { requireAuth } = require('../middleware/auth');
 
-// Public GETs
-router.get('/', courses.getAllCourses);
-router.get('/:id', courses.getCourseById);
+// PUBLIC GETs – no validation middleware here
+router.get('/', controller.getAllCourses);
+router.get('/:id', controller.getCourseById);
 
-// Protected POST/PUT (per your assignment)
-router.post('/', requireAuth, validate.addCourseRules(), validate.addCourseValidation, courses.createCourse);
-router.put('/:id', requireAuth, validate.addCourseRules(), validate.addCourseValidation, courses.updateCourse);
+// CREATE
+router.post(
+  '/',
+  validate.addCourseRules(),
+  validate.handleValidation,
+  controller.addCourse
+);
 
-// Delete (your choice to protect or not)
-router.delete('/:id', courses.deleteCourse);
+// UPDATE
+router.put(
+  '/:id',
+  validate.updateCourseRules(),
+  validate.handleValidation,
+  controller.updateCourse
+);
+
+// DELETE
+router.delete('/:id', controller.deleteCourse);
 
 module.exports = router;
