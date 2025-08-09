@@ -1,103 +1,105 @@
 const mongodb = require('../data/database');
-const ObjectId = require('mongodb').ObjectId;
+const { ObjectId } = require('mongodb');
 
-// GET all instructors
+// Helpers
+const toObjectId = (id) => (ObjectId.isValid(id) ? new ObjectId(id) : null);
+
+// GET /instructor/
 const getAllInstructors = async (req, res) => {
   //#swagger.tags = ['Instructors']
   try {
-    const result = await mongodb.getDb().db().collection('instructors').find();
-    const instructors = await result.toArray();
+    const db = mongodb.getDb();
+    const instructors = await db.collection('instructors').find({}).toArray();
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(instructors);
   } catch (error) {
-    console.error("Error getting all instructors:", error);
+    console.error('Error getting all instructors:', error);
     res.status(500).json({ message: 'Error retrieving instructors', error: error.message });
   }
 };
 
-// GET instructor by ID
+// GET /instructor/:id
 const getInstructorById = async (req, res) => {
   //#swagger.tags = ['Instructors']
   try {
-    const instructorId = new ObjectId(req.params.id);
-    const result = await mongodb.getDb().db().collection('instructors').find({ _id: instructorId });
-    const instructor = await result.toArray();
+    const _id = toObjectId(req.params.id);
+    if (!_id) return res.status(400).json({ message: 'Bad Request: invalid id' });
 
-    if (instructor.length === 0) {
-      return res.status(404).json({ message: 'Instructor not found' });
-    }
+    const db = mongodb.getDb();
+    const instructor = await db.collection('instructors').findOne({ _id });
 
+    if (!instructor) return res.status(404).json({ message: 'Instructor not found' });
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json(instructor[0]);
+    res.status(200).json(instructor);
   } catch (error) {
-    console.error("Error getting instructor by ID:", error);
+    console.error('Error getting instructor by ID:', error);
     res.status(500).json({ message: 'Error retrieving instructor', error: error.message });
   }
 };
 
-// POST new instructor
+// POST /instructor/
 const createInstructor = async (req, res) => {
   //#swagger.tags = ['Instructors']
   try {
-    const newInstructor = {
+    const db = mongodb.getDb();
+    const doc = {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
       specialty: req.body.specialty,
+      createdAt: new Date()
     };
 
-    const result = await mongodb.getDb().db().collection('instructors').insertOne(newInstructor);
-    
-    if (result.acknowledged) {
-      res.status(201).json({ message: 'Instructor created successfully', instructorId: result.insertedId });
-    } else {
-      res.status(500).json({ message: 'Failed to create instructor' });
-    }
+    const result = await db.collection('instructors').insertOne(doc);
+    res.status(201).json({ message: 'Created', _id: result.insertedId });
   } catch (error) {
-    console.error("Error creating instructor:", error);
+    console.error('Error creating instructor:', error);
     res.status(500).json({ message: 'Error creating instructor', error: error.message });
   }
 };
 
-// PUT update instructor by ID
+// PUT /instructor/:id
 const updateInstructor = async (req, res) => {
   //#swagger.tags = ['Instructors']
   try {
-    const instructorId = new ObjectId(req.params.id);
-    const instructor = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      specialty: req.body.specialty,
+    const _id = toObjectId(req.params.id);
+    if (!_id) return res.status(400).json({ message: 'Bad Request: invalid id' });
+
+    const db = mongodb.getDb();
+    const update = {
+      $set: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        specialty: req.body.specialty,
+        updatedAt: new Date()
+      }
     };
 
-    const result = await mongodb.getDb().db().collection('instructors').replaceOne({ _id: instructorId }, instructor);
+    const result = await db.collection('instructors').updateOne({ _id }, update);
+    if (!result.matchedCount) return res.status(404).json({ message: 'Instructor not found' });
 
-    if (result.modifiedCount > 0) {
-      res.status(200).json({ message: 'Instructor updated successfully' });
-    } else {
-      res.status(404).json({ message: 'Instructor not found or no changes made' });
-    }
+    res.status(200).json({ message: 'OK' });
   } catch (error) {
-    console.error("Error updating instructor:", error);
+    console.error('Error updating instructor:', error);
     res.status(500).json({ message: 'Error updating instructor', error: error.message });
   }
 };
 
-// DELETE instructor by ID
+// DELETE /instructor/:id
 const deleteInstructor = async (req, res) => {
   //#swagger.tags = ['Instructors']
   try {
-    const instructorId = new ObjectId(req.params.id);
-    const result = await mongodb.getDb().db().collection('instructors').deleteOne({ _id: instructorId });
+    const _id = toObjectId(req.params.id);
+    if (!_id) return res.status(400).json({ message: 'Bad Request: invalid id' });
 
-    if (result.deletedCount > 0) {
-      res.status(200).json({ message: 'Instructor deleted successfully' });
-    } else {
-      res.status(404).json({ message: 'Instructor not found' });
-    }
+    const db = mongodb.getDb();
+    const result = await db.collection('instructors').deleteOne({ _id });
+
+    if (!result.deletedCount) return res.status(404).json({ message: 'Instructor not found' });
+    res.status(200).json({ message: 'OK' });
   } catch (error) {
-    console.error("Error deleting instructor:", error);
+    console.error('Error deleting instructor:', error);
     res.status(500).json({ message: 'Error deleting instructor', error: error.message });
   }
 };

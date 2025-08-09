@@ -1,28 +1,36 @@
-const MongoClient = require("mongodb").MongoClient;
+// data/database.js
+const { MongoClient } = require('mongodb');
 
-let _db;
+let _client = null;
+let _db = null;
 
-const initDb = (callback) => {
-  if (_db) {
-    console.log("Database is already initialized!");
-    return callback(null, _db);
+const initDb = async (cb) => {
+  try {
+    if (_db) return cb ? cb(null, _db) : _db;
+
+    const url = process.env.MONGODB_URL || process.env.MONGODB_URI;
+    if (!url) throw new Error('Missing MONGODB_URL or MONGODB_URI');
+
+    _client = await MongoClient.connect(url, { ignoreUndefined: true });
+    _db = _client.db(); // uses default DB in your connection string
+    return cb ? cb(null, _db) : _db;
+  } catch (err) {
+    if (cb) return cb(err);
+    throw err;
   }
-
-  MongoClient.connect(process.env.MONGODB_URL)
-    .then((client) => {
-      _db = client.db();
-      callback(null, _db);
-    })
-    .catch((err) => {
-      callback(err);
-    });
 };
 
 const getDb = () => {
-  if (!_db) {
-    throw Error("Database not initialized");
-  }
+  if (!_db) throw new Error('Database not initialized');
   return _db;
 };
 
-module.exports = { initDb, getDb };
+const closeDb = async () => {
+  if (_client) {
+    await _client.close();
+    _client = null;
+    _db = null;
+  }
+};
+
+module.exports = { initDb, getDb, closeDb };

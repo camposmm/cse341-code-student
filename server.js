@@ -1,44 +1,32 @@
+// server.js
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-
-const mongodb = require('./data/database');
+const cors = require('cors');
+const { initDb } = require('./data/database');
 
 const app = express();
-
-// Body parsing
+app.use(cors());
 app.use(bodyParser.json());
 
-// Basic CORS headers (kept from your original style)
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // adjust if needed
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, PATCH, DELETE, OPTIONS'
-  );
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
-  );
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
-});
+// mount your routes
+app.use('/', require('./routes/index')); // adjust if your entry router differs
 
-// Routes
-app.use('/', require('./routes'));
-
-// Export app for tests (Supertest)
-module.exports = app;
-
-// Start server after DB connection
 const port = process.env.PORT || 3000;
-mongodb.initDb((err) => {
-  if (err) {
-    console.log('Failed to connect to the database:', err);
-    process.exit(1);
-  } else {
-    app.listen(port, () => {
-      console.log(`Connected to DB. Server is listening on port ${port}`);
-    });
-  }
-});
+
+// Only connect & listen when NOT running tests
+if (process.env.NODE_ENV !== 'test') {
+  initDb((err) => {
+    if (err) {
+      console.error('Failed to connect to DB:', err);
+      process.exit(1);
+    } else {
+      app.listen(port, () => {
+        console.log(`Connected to DB. Server is listening on port ${port}`);
+      });
+    }
+  });
+}
+
+// IMPORTANT: export ONLY the Express app for Supertest
+module.exports = app;

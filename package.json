@@ -9,6 +9,10 @@
     "swagger": "node ./swagger.js",
     "test": "cross-env NODE_ENV=test jest --runInBand"
   },
+    "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/tests/jest.setup.js"]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/camposmm/cse341-code-student"

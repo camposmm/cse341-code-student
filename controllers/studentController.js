@@ -1,128 +1,112 @@
 const mongodb = require('../data/database');
+const { ObjectId } = require('mongodb');
 
-const ObjectId = require('mongodb').ObjectId;
+const toObjectId = (id) => (ObjectId.isValid(id) ? new ObjectId(id) : null);
 
-// Function to get all students
+// GET /student/
 const getAllStudents = async (req, res) => {
-    //#swagger.tags = ['Students']
+  //#swagger.tags = ['Students']
   try {
-    const result = await mongodb.getDb().db().collection('students').find();
-    const students = await result.toArray();
-
+    const db = mongodb.getDb();
+    const students = await db.collection('students').find({}).toArray();
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(students);
   } catch (error) {
-    console.error("Error getting all students:", error);
+    console.error('Error getting all students:', error);
     res.status(500).json({ message: 'Error retrieving students', error: error.message });
   }
-}
+};
 
-// Function to get a student by id
+// GET /student/:id
 const getStudentById = async (req, res) => {
-    //#swagger.tags = ['Students']
+  //#swagger.tags = ['Students']
   try {
-    const stundentId = new ObjectId(req.params.id);
-    const result = await mongodb
-        .getDb()
-        .db()
-        .collection('students')
-        .find({ _id: stundentId });
-    
-    const student = await result.toArray();
+    const _id = toObjectId(req.params.id);
+    if (!_id) return res.status(400).json({ message: 'Bad Request: invalid id' });
 
-    if (student.length === 0) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
+    const db = mongodb.getDb();
+    const student = await db.collection('students').findOne({ _id });
 
+    if (!student) return res.status(404).json({ message: 'Student not found' });
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json(student[0]);
+    res.status(200).json(student);
   } catch (error) {
-    console.error("Error getting user by ID:", error);
+    console.error('Error getting student by ID:', error);
     res.status(500).json({ message: 'Error retrieving student', error: error.message });
   }
-}
+};
 
-// Function to create a new student
+// POST /student/
 const createStudent = async (req, res) => {
   //#swagger.tags = ['Students']
   try {
-    const newStudent = {
+    const db = mongodb.getDb();
+    const doc = {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
       dateOfBirth: req.body.dateOfBirth,
       phone: req.body.phone,
       address: req.body.address,
-      registrationDate: req.body.registrationDate,      
+      registrationDate: req.body.registrationDate,
+      createdAt: new Date()
     };
-    const result = await mongodb
-      .getDb()
-      .db()
-      .collection('students')
-      .insertOne(newStudent);
-    
-    if (result.acknowledged) {
-      res.status(201).json({ message: 'Student created successfully', studentId: result.insertedId });
-    } else {
-      res.status(500).json({ message: 'Failed to create student' });
-    }
-} catch (error) {
-    console.error("Error creating student:", error);
+
+    const result = await db.collection('students').insertOne(doc);
+    res.status(201).json({ message: 'Created', _id: result.insertedId });
+  } catch (error) {
+    console.error('Error creating student:', error);
     res.status(500).json({ message: 'Error creating student', error: error.message });
   }
 };
 
-// Function to update a student by id
+// PUT /student/:id
 const updateStudent = async (req, res) => {
   //#swagger.tags = ['Students']
   try {
-    const studentId = new ObjectId(req.params.id);
-    const student = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      dateOfBirth: req.body.dateOfBirth,
-      phone: req.body.phone,
-      address: req.body.address,
-      registrationDate: req.body.registrationDate,      
-    }
-    const result = await mongodb
-      .getDb()
-      .db()
-      .collection('students')
-      .replaceOne({ _id: studentId }, student);
+    const _id = toObjectId(req.params.id);
+    if (!_id) return res.status(400).json({ message: 'Bad Request: invalid id' });
 
-    if (result.modifiedCount > 0) {
-      res.status(200).json({ message: 'Student updated successfully' });
-    } else {
-      res.status(404).json({ message: 'Student not found or no changes made' });
-    }
+    const db = mongodb.getDb();
+    const update = {
+      $set: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        dateOfBirth: req.body.dateOfBirth,
+        phone: req.body.phone,
+        address: req.body.address,
+        registrationDate: req.body.registrationDate,
+        updatedAt: new Date()
+      }
+    };
+
+    const result = await db.collection('students').updateOne({ _id }, update);
+    if (!result.matchedCount) return res.status(404).json({ message: 'Student not found' });
+
+    res.status(200).json({ message: 'OK' });
   } catch (error) {
-    console.error("Error updating student:", error);
+    console.error('Error updating student:', error);
     res.status(500).json({ message: 'Error updating student', error: error.message });
   }
 };
 
-// Delete a student by id
+// DELETE /student/:id
 const deleteStudent = async (req, res) => {
   //#swagger.tags = ['Students']
-    try {
-        const studentId = new ObjectId(req.params.id);
-        const result = await mongodb
-        .getDb()
-        .db()
-        .collection('students')
-        .deleteOne({ _id: studentId });
-    
-        if (result.deletedCount > 0) {
-            res.status(200).json({ message: 'Student deleted successfully' });  
-        } else {
-            res.status(404).json({ message: 'Student not found' });
-        }
-    } catch (error) {
-        console.error("Error deleting student:", error);
-        res.status(500).json({ message: 'Error deleting student', error: error.message });
-    }
+  try {
+    const _id = toObjectId(req.params.id);
+    if (!_id) return res.status(400).json({ message: 'Bad Request: invalid id' });
+
+    const db = mongodb.getDb();
+    const result = await db.collection('students').deleteOne({ _id });
+
+    if (!result.deletedCount) return res.status(404).json({ message: 'Student not found' });
+    res.status(200).json({ message: 'OK' });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ message: 'Error deleting student', error: error.message });
+  }
 };
 
 module.exports = {
