@@ -1,31 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const validate = require('../utilities/course-validation');
-
 const courses = require('../controllers/courseController');
+const validate = require('../utilities/course-validation');
+const { requireAuth } = require('../middleware/auth');
 
-router.post('/',
-    validate.addCourseRules(),
-    validate.addCourseValidation,
-    courses.createCourse
-);
+// Public GETs
+router.get('/', courses.getAllCourses);
+router.get('/:id', courses.getCourseById);
 
-router.get('/',
-    courses.getAll
-);
+// Protected POST/PUT (per your assignment)
+router.post('/', requireAuth, validate.addCourseRules(), validate.addCourseValidation, courses.createCourse);
+router.put('/:id', requireAuth, validate.addCourseRules(), validate.addCourseValidation, courses.updateCourse);
 
-router.get('/:id',
-    courses.getById
-);
-
-router.put('/:id',
-    validate.addCourseRules(),
-    validate.addCourseValidation,
-    courses.updateCourse
-)
-
-router.delete('/:id',
-    courses.deleteCourse
-);
+// Delete (your choice to protect or not)
+router.delete('/:id', courses.deleteCourse);
 
 module.exports = router;

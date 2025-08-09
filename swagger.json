@@ -7,9 +7,17 @@
   },
   "host": "https://cse341-code-student-bgwm.onrender.com",
   "basePath": "/",
-  "schemes": [
-    "https"
-  ],
+  "schemes": ["https"],
+
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Format: Bearer {token}"
+    }
+  },
+
   "paths": {
     "/student/": {
       "get": {
@@ -49,6 +57,7 @@
         }
       }
     },
+
     "/student/{id}": {
       "get": {
         "tags": ["Students"],
@@ -105,6 +114,7 @@
         }
       }
     },
+
     "/instructor/": {
       "get": {
         "tags": ["Instructors"],
@@ -140,6 +150,7 @@
         }
       }
     },
+
     "/instructor/{id}": {
       "get": {
         "tags": ["Instructors"],
@@ -193,10 +204,12 @@
         }
       }
     },
+
     "/course/": {
       "post": {
         "tags": ["Courses"],
         "description": "",
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "body",
@@ -228,6 +241,7 @@
         }
       }
     },
+
     "/course/{id}": {
       "get": {
         "tags": ["Courses"],
@@ -245,6 +259,7 @@
       "put": {
         "tags": ["Courses"],
         "description": "",
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "type": "string" },
           {
@@ -285,6 +300,7 @@
       "post": {
         "tags": ["Enrollments"],
         "description": "Enroll a student in a course",
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "body",
@@ -305,10 +321,12 @@
         }
       }
     },
+
     "/enrollments/{id}": {
       "delete": {
         "tags": ["Enrollments"],
         "description": "Drop a course (Student/Admin only)",
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "type": "string" }
         ],
@@ -319,6 +337,7 @@
         }
       }
     },
+
     "/enrollments/student/{id}": {
       "get": {
         "tags": ["Enrollments"],
@@ -333,6 +352,7 @@
         }
       }
     },
+
     "/enrollments/course/{id}": {
       "get": {
         "tags": ["Enrollments"],
@@ -347,10 +367,12 @@
         }
       }
     },
+
     "/enrollments/{id}/progress": {
       "patch": {
         "tags": ["Enrollments"],
         "description": "Update course progress (e.g., mark as completed)",
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "type": "string" },
           {

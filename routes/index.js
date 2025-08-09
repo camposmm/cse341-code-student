@@ -1,14 +1,15 @@
-const router = require("express").Router();
+// routes/index.js
+const express = require('express');
+const router = express.Router();
 
-router.use('/', require('./swagger'));
+router.get('/', (req, res) => res.send('Welcome to the page'));
+
 router.use('/student', require('./student'));
 router.use('/instructor', require('./instructor'));
 router.use('/course', require('./course'));
-// router.use('/enrollment', require('./enrollment'));
+router.use('/enrollments', require('./enrollment'));
 
-router.get("/", (req, res) => {
-  //#swagger.tags = ['Home']
-  res.send("Learning Academy API");
-});
+// ✅ Swagger UI
+router.use('/api-docs', require('./swagger'));
 
 module.exports = router;
