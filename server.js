@@ -1,32 +1,41 @@
-// server.js
-require('dotenv').config();
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-const { initDb } = require('./data/database');
+require('dotenv').config();
+
+const routes = require('./routes/index');
+// Alias initDb -> connectToDb so existing call works
+const { initDb: connectToDb } = require('./data/database');
+// If your DB file actually exports connectToDb already, use this instead:
+// const { connectToDb } = require('./data/database');
 
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
-
-// mount your routes
-app.use('/', require('./routes/index')); // adjust if your entry router differs
-
 const port = process.env.PORT || 3000;
 
-// Only connect & listen when NOT running tests
-if (process.env.NODE_ENV !== 'test') {
-  initDb((err) => {
-    if (err) {
-      console.error('Failed to connect to DB:', err);
-      process.exit(1);
-    } else {
-      app.listen(port, () => {
-        console.log(`Connected to DB. Server is listening on port ${port}`);
-      });
-    }
-  });
-}
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-// IMPORTANT: export ONLY the Express app for Supertest
-module.exports = app;
+// Routes
+app.use('/', routes);
+
+// JSON error handler (consistent output instead of HTML)
+app.use((err, req, res, next) => {
+  console.error(err);
+  const status = err.status || 500;
+  res.status(status).json({
+    error: err.name || 'Error',
+    message: err.message || 'Internal Server Error'
+  });
+});
+
+// Connect to DB and start server
+connectToDb((err) => {
+  if (!err) {
+    app.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+    });
+  } else {
+    console.error('❌ Failed to connect to the database:', err);
+    process.exit(1);
+  }
+});

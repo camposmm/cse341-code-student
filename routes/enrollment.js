@@ -1,31 +1,23 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const enrollmentController = require("../controllers/enrollmentController");
-const { requireAuth } = require('../middleware/auth'); // ✅ add
 
-// your existing validation (the file in your repo is 'enrolment-validation.js')
+const ctrl = require('../controllers/enrollmentController');
 const {
   addEnrollmentRules,
-  addEnrollmentValidation
-} = require("../utilities/enrolment-validation");
+  idParamRule,
+  validate
+} = require('../utilities/enrolment-validation');
 
-// ✅ Protect POST
-router.post(
-  "/",
-  requireAuth,
-  addEnrollmentRules(),
-  addEnrollmentValidation,
-  enrollmentController.enrollStudent
-);
+// ✅ Import your Auth middleware directly
+const { requireAuth } = require('../middleware/auth');
 
-// ✅ Protect DELETE
-router.delete("/:id", requireAuth, enrollmentController.dropEnrollment);
+// -------- Public GETs --------
+router.get('/student/:id', idParamRule(), validate, ctrl.getEnrollmentsByStudent);
+router.get('/course/:id', idParamRule(), validate, ctrl.getEnrollmentsByCourse);
 
-// GETs stay public
-router.get("/student/:id", enrollmentController.getEnrollmentsByStudent);
-router.get("/course/:id", enrollmentController.getEnrollmentsByCourse);
-
-// ✅ Protect PATCH
-router.patch("/:id/progress", requireAuth, enrollmentController.updateEnrollmentProgress);
+// -------- Protected writes --------
+router.post('/', requireAuth, addEnrollmentRules(), validate, ctrl.enrollStudent);
+router.delete('/:id', requireAuth, idParamRule(), validate, ctrl.dropEnrollment);
+router.patch('/:id/progress', requireAuth, idParamRule(), validate, ctrl.updateEnrollmentProgress);
 
 module.exports = router;
