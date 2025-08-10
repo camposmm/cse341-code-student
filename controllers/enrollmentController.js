@@ -1,3 +1,4 @@
+// controllers/enrollmentController.js
 const { ObjectId } = require('mongodb');
 const { getDb } = require('../data/database');
 
@@ -18,7 +19,7 @@ async function enrollStudent(req, res) {
   try {
     const db = getDb();
 
-    // Ensure refs exist
+    // Ensure referenced student & course exist
     const [student, course] = await Promise.all([
       db.collection('students').findOne({ _id: new ObjectId(studentId) }),
       db.collection('courses').findOne({ _id: new ObjectId(courseId) })
@@ -43,10 +44,15 @@ async function enrollStudent(req, res) {
     };
 
     const result = await db.collection('enrollments').insertOne(doc);
-    return res.status(201).json({ message: 'Enrollment created', _id: result.insertedId, ...doc });
+
+    // Optional Location header to the new resource
+    res
+      .status(201)
+      .location(`/enrollments/${result.insertedId}`)
+      .json({ message: 'Enrollment created', _id: result.insertedId, ...doc });
   } catch (err) {
     console.error('Failed to enroll student:', err);
-    return res.status(500).json({ error: 'Failed to enroll student' });
+    res.status(500).json({ error: 'Failed to enroll student' });
   }
 }
 
@@ -65,10 +71,10 @@ async function dropEnrollment(req, res) {
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Enrollment not found' });
     }
-    return res.status(200).json({ message: 'Enrollment deleted' });
+    res.status(200).json({ message: 'Enrollment deleted' });
   } catch (err) {
     console.error('Failed to delete enrollment:', err);
-    return res.status(500).json({ error: 'Failed to delete enrollment' });
+    res.status(500).json({ error: 'Failed to delete enrollment' });
   }
 }
 
@@ -87,10 +93,10 @@ async function getEnrollmentsByStudent(req, res) {
       .collection('enrollments')
       .find({ studentId: new ObjectId(id) })
       .toArray();
-    return res.status(200).json(list);
+    res.status(200).json(list);
   } catch (err) {
     console.error('Failed to fetch enrollments by student:', err);
-    return res.status(500).json({ error: 'Failed to fetch enrollments' });
+    res.status(500).json({ error: 'Failed to fetch enrollments' });
   }
 }
 
@@ -109,10 +115,10 @@ async function getEnrollmentsByCourse(req, res) {
       .collection('enrollments')
       .find({ courseId: new ObjectId(id) })
       .toArray();
-    return res.status(200).json(list);
+    res.status(200).json(list);
   } catch (err) {
     console.error('Failed to fetch enrollments by course:', err);
-    return res.status(500).json({ error: 'Failed to fetch enrollments' });
+    res.status(500).json({ error: 'Failed to fetch enrollments' });
   }
 }
 
@@ -133,17 +139,21 @@ async function updateEnrollmentProgress(req, res) {
 
   try {
     const db = getDb();
-    const result = await db.collection('enrollments').findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: { progress } },
-      { returnDocument: 'after' }
-    );
+    const _id = new ObjectId(id);
 
-    if (!result.value) return res.status(404).json({ error: 'Enrollment not found' });
-    return res.status(200).json({ message: 'Progress updated', enrollment: result.value });
+    // Update then fetch (most compatible across driver versions)
+    const result = await db.collection('enrollments')
+      .updateOne({ _id }, { $set: { progress } });
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+
+    const updated = await db.collection('enrollments').findOne({ _id });
+    res.status(200).json({ message: 'Progress updated', enrollment: updated });
   } catch (err) {
     console.error('Failed to update enrollment:', err);
-    return res.status(500).json({ error: 'Failed to update enrollment' });
+    res.status(500).json({ error: 'Failed to update enrollment' });
   }
 }
 
