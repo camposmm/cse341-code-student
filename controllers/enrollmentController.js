@@ -1,10 +1,12 @@
 const { ObjectId } = require('mongodb');
 const { getDb } = require('../data/database');
 
-// POST /enrollments
-// body: { studentId, courseId }
-const enrollStudent = async (req, res) => {
-  const { studentId, courseId } = req.body;
+/**
+ * POST /enrollments
+ * body: { studentId: "<ObjectId>", courseId: "<ObjectId>" }
+ */
+async function enrollStudent(req, res) {
+  const { studentId, courseId } = req.body || {};
 
   if (!studentId || !courseId) {
     return res.status(400).json({ error: 'studentId and courseId are required' });
@@ -16,7 +18,7 @@ const enrollStudent = async (req, res) => {
   try {
     const db = getDb();
 
-    // Make sure both refs exist (optional but helpful)
+    // Ensure refs exist
     const [student, course] = await Promise.all([
       db.collection('students').findOne({ _id: new ObjectId(studentId) }),
       db.collection('courses').findOne({ _id: new ObjectId(courseId) })
@@ -46,10 +48,12 @@ const enrollStudent = async (req, res) => {
     console.error('Failed to enroll student:', err);
     return res.status(500).json({ error: 'Failed to enroll student' });
   }
-};
+}
 
-// DELETE /enrollments/:id
-const dropEnrollment = async (req, res) => {
+/**
+ * DELETE /enrollments/:id
+ */
+async function dropEnrollment(req, res) {
   const { id } = req.params;
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({ error: 'Invalid enrollment id' });
@@ -66,10 +70,12 @@ const dropEnrollment = async (req, res) => {
     console.error('Failed to delete enrollment:', err);
     return res.status(500).json({ error: 'Failed to delete enrollment' });
   }
-};
+}
 
-// GET /enrollments/student/:id
-const getEnrollmentsByStudent = async (req, res) => {
+/**
+ * GET /enrollments/student/:id
+ */
+async function getEnrollmentsByStudent(req, res) {
   const { id } = req.params;
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({ error: 'Invalid student id' });
@@ -86,10 +92,12 @@ const getEnrollmentsByStudent = async (req, res) => {
     console.error('Failed to fetch enrollments by student:', err);
     return res.status(500).json({ error: 'Failed to fetch enrollments' });
   }
-};
+}
 
-// GET /enrollments/course/:id
-const getEnrollmentsByCourse = async (req, res) => {
+/**
+ * GET /enrollments/course/:id
+ */
+async function getEnrollmentsByCourse(req, res) {
   const { id } = req.params;
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({ error: 'Invalid course id' });
@@ -106,13 +114,15 @@ const getEnrollmentsByCourse = async (req, res) => {
     console.error('Failed to fetch enrollments by course:', err);
     return res.status(500).json({ error: 'Failed to fetch enrollments' });
   }
-};
+}
 
-// PATCH /enrollments/:id/progress
-// body: { progress: 'enrolled' | 'in-progress' | 'completed' | ... }
-const updateEnrollmentProgress = async (req, res) => {
+/**
+ * PATCH /enrollments/:id/progress
+ * body: { progress: "enrolled" | "in-progress" | "completed" | ... }
+ */
+async function updateEnrollmentProgress(req, res) {
   const { id } = req.params;
-  const { progress } = req.body;
+  const { progress } = req.body || {};
 
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({ error: 'Invalid enrollment id' });
@@ -135,7 +145,7 @@ const updateEnrollmentProgress = async (req, res) => {
     console.error('Failed to update enrollment:', err);
     return res.status(500).json({ error: 'Failed to update enrollment' });
   }
-};
+}
 
 module.exports = {
   enrollStudent,
