@@ -1,15 +1,13 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
 const routes = require('./routes/index');
-// Alias initDb -> connectToDb so existing call works
-const { initDb: connectToDb } = require('./data/database');
-// If your DB file actually exports connectToDb already, use this instead:
-// const { connectToDb } = require('./data/database');
+// Use whatever your DB file exports; alias to connectToDb
+const { initDb: connectToDb } = require('./data/database'); // or: const { connectToDb } = require('./data/database');
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -28,14 +26,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to DB and start server
-connectToDb((err) => {
-  if (!err) {
-    app.listen(port, () => {
-      console.log(`🚀 Server running at http://localhost:${port}`);
-    });
-  } else {
-    console.error('❌ Failed to connect to the database:', err);
-    process.exit(1);
-  }
-});
+// ✅ Export the app for supertest
+module.exports = app;
+
+// Only start the server when run directly (NOT during tests)
+if (require.main === module && process.env.NODE_ENV !== 'test') {
+  const port = process.env.PORT || 3000;
+  connectToDb((err) => {
+    if (!err) {
+      app.listen(port, () => {
+        console.log(`🚀 Server running at http://localhost:${port}`);
+      });
+    } else {
+      console.error('❌ Failed to connect to the database:', err);
+      process.exit(1);
+    }
+  });
+}
