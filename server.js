@@ -1,21 +1,31 @@
-const express = require('express');
-const cors = require('cors');
+// server.js
 require('dotenv').config();
 
-const routes = require('./routes/index');
-// alias initDb → connectToDb for compatibility
-const { initDb: connectToDb } = require('./data/database');
+const express = require('express');
+const cors = require('cors');
 
 const app = express();
 
-// Middleware
+// Optional request logging (won't crash if morgan isn't installed)
+try {
+  const morgan = require('morgan');
+  app.use(morgan('dev'));
+} catch (_) { /* no-op */ }
+
+// Core middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
+const routes = require('./routes/index');
 app.use('/', routes);
 
-// JSON error handler (consistent output instead of HTML)
+// 404 for unknown routes (JSON instead of "Cannot GET /")
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+// Global JSON error handler
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;
@@ -25,20 +35,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Export for tests
+// Export the app for tests
 module.exports = app;
 
 // Start server only when not running tests
 if (require.main === module && process.env.NODE_ENV !== 'test') {
+  const { initDb } = require('./data/database');
   const port = process.env.PORT || 3000;
-  connectToDb((err) => {
-    if (!err) {
-      app.listen(port, () => {
-        console.log(`🚀 Server running at http://localhost:${port}`);
-      });
-    } else {
+
+  initDb((err) => {
+    if (err) {
       console.error('❌ Failed to connect to the database:', err);
       process.exit(1);
     }
+    app.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+    });
   });
 }
