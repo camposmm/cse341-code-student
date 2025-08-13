@@ -1,297 +1,282 @@
 {
-  "swagger": "2.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Learning Academy API",
-    "description": "API for managing task",
+    "title": "CSE 341 Learning Academy API",
+    "description": "Students, Instructors, Courses, and Enrollments API with OAuth (Auth0), validation, error handling, and full CRUD for four collections.",
     "version": "1.0.0"
   },
-  "host": "cse341-code-student-bgwm.onrender.com",
-  "basePath": "/",
-  "schemes": ["https"],
-
-  "securityDefinitions": {
-    "BearerAuth": {
-      "type": "apiKey",
-      "name": "Authorization",
-      "in": "header",
-      "description": "Format: Bearer {token}"
-    }
-  },
-
+  "servers": [
+    { "url": "https://cse341-code-student-bgwm.onrender.com" },
+    { "url": "http://localhost:3000" }
+  ],
+  "tags": [
+    { "name": "Students" },
+    { "name": "Instructors" },
+    { "name": "Courses" },
+    { "name": "Enrollments" },
+    { "name": "Health" }
+  ],
+  "security": [
+    { "bearerAuth": [] }
+  ],
   "paths": {
-    "/student/": {
+    "/healthz": {
       "get": {
-        "tags": ["Students"],
-        "description": "",
-        "produces": ["application/json"],
+        "tags": ["Health"],
+        "summary": "Health check",
+        "security": [],
         "responses": {
-          "200": { "description": "OK" },
-          "500": { "description": "Internal Server Error" }
-        }
-      },
-      "post": {
-        "tags": ["Students"],
-        "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "firstName": { "example": "any" },
-                "lastName": { "example": "any" },
-                "email": { "example": "any" },
-                "dateOfBirth": { "example": "any" },
-                "phone": { "example": "any" },
-                "address": { "example": "any" },
-                "registrationDate": { "example": "any" }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "201": { "description": "Created" },
-          "422": { "description": "Unprocessable Entity" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "ok (service is up)" }
         }
       }
     },
 
+    "/student": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "List students",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Array of students",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "post": {
+        "tags": ["Students"],
+        "summary": "Create student (secured)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Student" },
+              "example": {
+                "firstName": "Marina",
+                "lastName": "Alves",
+                "email": "marina.alves@example.com",
+                "dateOfBirth": "1998-03-21",
+                "phone": "+55 11 98876-5544",
+                "address": "Rua das Acácias, 250, São Paulo, SP, Brazil",
+                "registrationDate": "2025-08-10"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } }
+          },
+          "409": { "description": "Duplicate email" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
     "/student/{id}": {
       "get": {
         "tags": ["Students"],
-        "description": "",
-        "produces": ["application/json"],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Get student by id",
+        "security": [],
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "200": { "description": "OK" },
-          "404": { "description": "Not Found" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Student", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
         }
       },
       "put": {
         "tags": ["Students"],
-        "description": "",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "firstName": { "example": "any" },
-                "lastName": { "example": "any" },
-                "email": { "example": "any" },
-                "dateOfBirth": { "example": "any" },
-                "phone": { "example": "any" },
-                "address": { "example": "any" },
-                "registrationDate": { "example": "any" }
-              }
-            }
-          }
-        ],
+        "summary": "Update student (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } }
+        },
         "responses": {
-          "200": { "description": "OK" },
-          "404": { "description": "Not Found" },
-          "422": { "description": "Unprocessable Entity" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "Duplicate email" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
       "delete": {
         "tags": ["Students"],
-        "description": "",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Delete student (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "200": { "description": "OK" },
-          "404": { "description": "Not Found" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
 
-    "/instructor/": {
+    "/instructor": {
       "get": {
         "tags": ["Instructors"],
-        "description": "",
-        "produces": ["application/json"],
+        "summary": "List instructors",
+        "security": [],
         "responses": {
-          "200": { "description": "OK" },
-          "500": { "description": "Internal Server Error" }
+          "200": {
+            "description": "Array of instructors",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Instructor" } }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
       "post": {
         "tags": ["Instructors"],
-        "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "firstName": { "example": "any" },
-                "lastName": { "example": "any" },
-                "email": { "example": "any" },
-                "specialty": { "example": "any" }
+        "summary": "Create instructor (secured)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Instructor" },
+              "example": {
+                "firstName": "Carla",
+                "lastName": "Menezes",
+                "email": "carla.menezes@example.com",
+                "specialty": "JavaScript & Frontend"
               }
             }
           }
-        ],
+        },
         "responses": {
-          "201": { "description": "Created" },
-          "422": { "description": "Unprocessable Entity" },
-          "500": { "description": "Internal Server Error" }
+          "201": {
+            "description": "Created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Instructor" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
-
     "/instructor/{id}": {
       "get": {
         "tags": ["Instructors"],
-        "description": "",
-        "produces": ["application/json"],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Get instructor by id",
+        "security": [],
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "200": { "description": "OK" },
-          "404": { "description": "Not Found" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Instructor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Instructor" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
         }
       },
       "put": {
         "tags": ["Instructors"],
-        "description": "",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "firstName": { "example": "any" },
-                "lastName": { "example": "any" },
-                "email": { "example": "any" },
-                "specialty": { "example": "any" }
-              }
-            }
-          }
-        ],
+        "summary": "Update instructor (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Instructor" } } } },
         "responses": {
-          "200": { "description": "OK" },
-          "404": { "description": "Not Found" },
-          "422": { "description": "Unprocessable Entity" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Instructor" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
       "delete": {
         "tags": ["Instructors"],
-        "description": "",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Delete instructor (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "200": { "description": "OK" },
-          "404": { "description": "Not Found" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
 
-    "/course/": {
+    "/course": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "List courses",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Array of courses",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Course" } }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
       "post": {
         "tags": ["Courses"],
-        "description": "",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "title": { "example": "any" },
-                "description": { "example": "any" },
-                "level": { "example": "any" },
-                "durationWeeks": { "example": "any" },
-                "instructorId": { "example": "any" }
+        "summary": "Create course (secured)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CourseCreate" },
+              "example": {
+                "title": "APIs with Node.js & MongoDB",
+                "description": "Build REST APIs with Express, JWT auth, and MongoDB.",
+                "level": "Intermediate",
+                "durationWeeks": 12,
+                "instructorId": "64c123456789abcdef06789a"
               }
             }
           }
-        ],
+        },
         "responses": {
-          "201": { "description": "Created" },
-          "422": { "description": "Unprocessable Entity" },
-          "500": { "description": "Internal Server Error" }
-        }
-      },
-      "get": {
-        "tags": ["Courses"],
-        "description": "",
-        "produces": ["application/json"],
-        "responses": {
-          "500": { "description": "Internal Server Error" }
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Course" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
-
     "/course/{id}": {
       "get": {
         "tags": ["Courses"],
-        "description": "",
-        "produces": ["application/json"],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Get course by id",
+        "security": [],
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "200": { "description": "OK" },
-          "400": { "description": "Bad Request" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Course", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Course" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
         }
       },
       "put": {
         "tags": ["Courses"],
-        "description": "",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "title": { "example": "any" },
-                "description": { "example": "any" },
-                "level": { "example": "any" },
-                "durationWeeks": { "example": "any" },
-                "instructorId": { "example": "any" }
-              }
-            }
-          }
-        ],
+        "summary": "Update course (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CourseCreate" } } } },
         "responses": {
-          "204": { "description": "No Content" },
-          "422": { "description": "Unprocessable Entity" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Course" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
       "delete": {
         "tags": ["Courses"],
-        "description": "",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Delete course (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "204": { "description": "No Content" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
@@ -299,98 +284,275 @@
     "/enrollments": {
       "post": {
         "tags": ["Enrollments"],
-        "description": "Enroll a student in a course",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "studentId": { "example": "student_id_here" },
-                "courseId": { "example": "course_id_here" }
-              }
+        "summary": "Create enrollment (secured)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EnrollmentCreate" },
+              "example": { "studentId": "64c123456789abcdef012345", "courseId": "64c123456789abcdef06789a" }
             }
           }
-        ],
+        },
         "responses": {
-          "201": { "description": "Enrollment created" },
-          "400": { "description": "Bad Request" },
-          "500": { "description": "Internal Server Error" }
+          "201": { "description": "Enrollment created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnrollmentCreated" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "Duplicate enrollment" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
-
     "/enrollments/{id}": {
+      "put": {
+        "tags": ["Enrollments"],
+        "summary": "Update enrollment (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EnrollmentUpdate" },
+              "example": { "progress": "in-progress" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Enrollment updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnrollmentProgressResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
       "delete": {
         "tags": ["Enrollments"],
-        "description": "Drop a course (Student/Admin only)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
+        "summary": "Delete enrollment (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
         "responses": {
-          "200": { "description": "Enrollment deleted" },
-          "404": { "description": "Enrollment not found" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
-
-    "/enrollments/student/{id}": {
-      "get": {
-        "tags": ["Enrollments"],
-        "description": "Get all enrollments for a student",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
-        "responses": {
-          "200": { "description": "Enrollments retrieved" },
-          "404": { "description": "Student not found" },
-          "500": { "description": "Internal Server Error" }
-        }
-      }
-    },
-
-    "/enrollments/course/{id}": {
-      "get": {
-        "tags": ["Enrollments"],
-        "description": "Get all students enrolled in a course",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" }
-        ],
-        "responses": {
-          "200": { "description": "Enrollments retrieved" },
-          "404": { "description": "Course not found" },
-          "500": { "description": "Internal Server Error" }
-        }
-      }
-    },
-
     "/enrollments/{id}/progress": {
       "patch": {
         "tags": ["Enrollments"],
-        "description": "Update course progress (e.g., mark as completed)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "type": "string" },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "progress": { "example": "completed" }
-              }
+        "summary": "Update enrollment progress (secured)",
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EnrollmentProgressUpdate" },
+              "example": { "progress": "completed" }
             }
           }
-        ],
+        },
         "responses": {
-          "200": { "description": "Progress updated" },
-          "404": { "description": "Enrollment not found" },
-          "500": { "description": "Internal Server Error" }
+          "200": { "description": "Progress updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnrollmentProgressResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
+      }
+    },
+    "/enrollments/student/{id}": {
+      "get": {
+        "tags": ["Enrollments"],
+        "summary": "List enrollments by student",
+        "security": [],
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "responses": {
+          "200": {
+            "description": "Array of enrollments",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Enrollment" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/enrollments/course/{id}": {
+      "get": {
+        "tags": ["Enrollments"],
+        "summary": "List enrollments by course",
+        "security": [],
+        "parameters": [{ "$ref": "#/components/parameters/IdParam" }],
+        "responses": {
+          "200": {
+            "description": "Array of enrollments",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Enrollment" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Message": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+
+      "Student": {
+        "type": "object",
+        "required": ["firstName", "lastName", "email", "dateOfBirth", "phone", "address", "registrationDate"],
+        "properties": {
+          "_id": { "type": "string", "example": "64c123456789abcdef012345" },
+          "firstName": { "type": "string", "example": "Marina" },
+          "lastName": { "type": "string", "example": "Alves" },
+          "email": { "type": "string", "format": "email", "example": "marina.alves@example.com" },
+          "dateOfBirth": { "type": "string", "example": "1998-03-21" },
+          "phone": { "type": "string", "example": "+55 11 98876-5544" },
+          "address": { "type": "string", "example": "Rua das Acácias, 250, São Paulo, SP, Brazil" },
+          "registrationDate": { "type": "string", "example": "2025-08-10" }
+        }
+      },
+
+      "Instructor": {
+        "type": "object",
+        "required": ["firstName", "lastName", "email", "specialty"],
+        "properties": {
+          "_id": { "type": "string", "example": "64c123456789abcdef06789a" },
+          "firstName": { "type": "string", "example": "Carla" },
+          "lastName": { "type": "string", "example": "Menezes" },
+          "email": { "type": "string", "format": "email", "example": "carla.menezes@example.com" },
+          "specialty": { "type": "string", "example": "JavaScript & Frontend" }
+        }
+      },
+
+      "Course": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "64c123456789abcdef0aaaaa" },
+          "title": { "type": "string", "example": "APIs with Node.js & MongoDB" },
+          "description": { "type": "string", "example": "Build REST APIs with Express, JWT auth, and MongoDB." },
+          "level": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced"], "example": "Intermediate" },
+          "durationWeeks": { "type": "integer", "minimum": 1, "example": 12 },
+          "instructorId": { "type": "string", "example": "64c123456789abcdef06789a" }
+        }
+      },
+
+      "CourseCreate": {
+        "type": "object",
+        "required": ["title", "description", "level", "durationWeeks", "instructorId"],
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "level": { "type": "string", "enum": ["Beginner", "Intermediate", "Advanced"] },
+          "durationWeeks": { "type": "integer", "minimum": 1 },
+          "instructorId": { "type": "string" }
+        }
+      },
+
+      "Enrollment": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "64c123456789abcdef0bbbbc" },
+          "studentId": { "type": "string", "example": "64c123456789abcdef012345" },
+          "courseId": { "type": "string", "example": "64c123456789abcdef06789a" },
+          "progress": { "type": "string", "example": "enrolled" },
+          "enrolledAt": { "type": "string", "format": "date-time", "example": "2025-08-10T12:34:56.000Z" }
+        }
+      },
+
+      "EnrollmentCreate": {
+        "type": "object",
+        "required": ["studentId", "courseId"],
+        "properties": {
+          "studentId": { "type": "string" },
+          "courseId": { "type": "string" }
+        }
+      },
+
+      "EnrollmentCreated": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "Enrollment created" },
+          "_id": { "type": "string", "example": "64c123456789abcdef0bbbbc" },
+          "studentId": { "type": "string" },
+          "courseId": { "type": "string" },
+          "progress": { "type": "string", "example": "enrolled" },
+          "enrolledAt": { "type": "string", "format": "date-time" }
+        }
+      },
+
+      "EnrollmentProgressUpdate": {
+        "type": "object",
+        "required": ["progress"],
+        "properties": {
+          "progress": { "type": "string", "example": "completed" }
+        }
+      },
+
+      "EnrollmentProgressResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "Progress updated" },
+          "enrollment": { "$ref": "#/components/schemas/Enrollment" }
+        }
+      },
+
+      "EnrollmentUpdate": {
+        "type": "object",
+        "description": "Provide one or more fields to update",
+        "properties": {
+          "studentId": { "type": "string" },
+          "courseId": { "type": "string" },
+          "progress": { "type": "string", "example": "completed" }
+        }
+      }
+    },
+
+    "parameters": {
+      "IdParam": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "example": "64c123456789abcdef012345" }
+      }
+    },
+
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "Not Found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "ServerError": {
+        "description": "Server error",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    },
+
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Paste an Auth0 JWT (RS256) for secured endpoints."
       }
     }
   }

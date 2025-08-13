@@ -1,11 +1,10 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
 const routes = require('./routes/index');
-// Use whatever your DB file exports; alias to connectToDb
-const { initDb: connectToDb } = require('./data/database'); // or: const { connectToDb } = require('./data/database');
+// alias initDb → connectToDb for compatibility
+const { initDb: connectToDb } = require('./data/database');
 
 const app = express();
 
@@ -26,10 +25,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ✅ Export the app for supertest
+// Export for tests
 module.exports = app;
 
-// Only start the server when run directly (NOT during tests)
+// Start server only when not running tests
 if (require.main === module && process.env.NODE_ENV !== 'test') {
   const port = process.env.PORT || 3000;
   connectToDb((err) => {

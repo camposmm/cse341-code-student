@@ -1,29 +1,35 @@
-// routes/course.js
-const router = require('express').Router();
-const controller = require('../controllers/courseController');
-const validate = require('../utilities/course-validation');
+const express = require('express');
+const { body, param, validationResult } = require('express-validator');
+const { ObjectId } = require('mongodb');
+const { requireAuth } = require('../middleware/auth');
+const {
+  listCourses, getCourseById, createCourse, updateCourse, deleteCourse
+} = require('../controllers/courseController');
 
-// PUBLIC GETs – no validation middleware here
-router.get('/', controller.getAllCourses);
-router.get('/:id', controller.getCourseById);
+const router = express.Router();
 
-// CREATE
-router.post(
-  '/',
-  validate.addCourseRules(),
-  validate.handleValidation,
-  controller.addCourse
-);
+const idParam = [param('id').custom(v => ObjectId.isValid(v)).withMessage('Invalid id')];
+const allowedLevels = ['Beginner', 'Intermediate', 'Advanced'];
+const courseRules = [
+  body('title').trim().notEmpty(),
+  body('description').trim().notEmpty(),
+  body('level').isIn(allowedLevels).withMessage('level must be one of: Beginner, Intermediate, Advanced'),
+  body('durationWeeks').isInt({ min: 1 }).toInt(),
+  body('instructorId').custom(v => ObjectId.isValid(v)).withMessage('instructorId must be a valid ObjectId')
+];
+const validate = (req,res,next) => {
+  const errs = validationResult(req);
+  if (!errs.isEmpty()) return res.status(400).json({ errors: errs.array() });
+  next();
+};
 
-// UPDATE
-router.put(
-  '/:id',
-  validate.updateCourseRules(),
-  validate.handleValidation,
-  controller.updateCourse
-);
+// Public GETs
+router.get('/', listCourses);
+router.get('/:id', idParam, validate, getCourseById);
 
-// DELETE
-router.delete('/:id', controller.deleteCourse);
+// Protected writes
+router.post('/', requireAuth, courseRules, validate, createCourse);
+router.put('/:id', requireAuth, idParam, courseRules, validate, updateCourse);
+router.delete('/:id', requireAuth, idParam, validate, deleteCourse);
 
 module.exports = router;

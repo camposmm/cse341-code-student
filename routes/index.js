@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-// Simple root (already existed in your app)
-router.get('/', (req, res) => res.send('Welcome to the page'));
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('../swagger.json');
 
-// ✅ Health check for Render (prevents 503 on cold start)
-router.get('/healthz', (req, res) => res.status(200).send('ok'));
+// Health check
+router.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
 
 // Feature routes
 router.use('/student', require('./student'));
@@ -13,7 +13,7 @@ router.use('/instructor', require('./instructor'));
 router.use('/course', require('./course'));
 router.use('/enrollments', require('./enrollment'));
 
-// Swagger UI
-router.use('/api-docs', require('./swagger'));
+// Swagger
+router.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
 
 module.exports = router;

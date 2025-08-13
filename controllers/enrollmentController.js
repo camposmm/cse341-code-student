@@ -1,4 +1,3 @@
-// controllers/enrollmentController.js
 const { ObjectId } = require('mongodb');
 const { getDb } = require('../data/database');
 
@@ -19,7 +18,6 @@ async function enrollStudent(req, res) {
   try {
     const db = getDb();
 
-    // Ensure referenced student & course exist
     const [student, course] = await Promise.all([
       db.collection('students').findOne({ _id: new ObjectId(studentId) }),
       db.collection('courses').findOne({ _id: new ObjectId(courseId) })
@@ -27,14 +25,11 @@ async function enrollStudent(req, res) {
     if (!student) return res.status(404).json({ error: 'Student not found' });
     if (!course) return res.status(404).json({ error: 'Course not found' });
 
-    // Prevent duplicate enrollment
     const existing = await db.collection('enrollments').findOne({
       studentId: new ObjectId(studentId),
       courseId: new ObjectId(courseId)
     });
-    if (existing) {
-      return res.status(409).json({ error: 'Student already enrolled in this course' });
-    }
+    if (existing) return res.status(409).json({ error: 'Student already enrolled in this course' });
 
     const doc = {
       studentId: new ObjectId(studentId),
@@ -44,37 +39,54 @@ async function enrollStudent(req, res) {
     };
 
     const result = await db.collection('enrollments').insertOne(doc);
-
-    // Optional Location header to the new resource
-    res
-      .status(201)
-      .location(`/enrollments/${result.insertedId}`)
-      .json({ message: 'Enrollment created', _id: result.insertedId, ...doc });
+    return res.status(201).json({ message: 'Enrollment created', _id: result.insertedId, ...doc });
   } catch (err) {
     console.error('Failed to enroll student:', err);
-    res.status(500).json({ error: 'Failed to enroll student' });
+    return res.status(500).json({ error: 'Failed to enroll student' });
   }
 }
 
 /**
- * DELETE /enrollments/:id
+ * PUT /enrollments/:id  (update one or more fields)
  */
-async function dropEnrollment(req, res) {
+async function updateEnrollment(req, res) {
   const { id } = req.params;
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ error: 'Invalid enrollment id' });
+  const { studentId, courseId, progress } = req.body || {};
+
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid enrollment id' });
+  if (studentId && !ObjectId.isValid(studentId)) return res.status(400).json({ error: 'studentId must be a valid ObjectId' });
+  if (courseId && !ObjectId.isValid(courseId)) return res.status(400).json({ error: 'courseId must be a valid ObjectId' });
+  if (progress != null && typeof progress !== 'string') return res.status(400).json({ error: 'progress must be a string' });
+  if (studentId == null && courseId == null && progress == null) {
+    return res.status(400).json({ error: 'Provide at least one of: studentId, courseId, progress' });
   }
 
   try {
     const db = getDb();
-    const result = await db.collection('enrollments').deleteOne({ _id: new ObjectId(id) });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
+    const _id = new ObjectId(id);
+
+    if (studentId) {
+      const s = await db.collection('students').findOne({ _id: new ObjectId(studentId) });
+      if (!s) return res.status(404).json({ error: 'Student not found' });
     }
-    res.status(200).json({ message: 'Enrollment deleted' });
-  } catch (err) {
-    console.error('Failed to delete enrollment:', err);
-    res.status(500).json({ error: 'Failed to delete enrollment' });
+    if (courseId) {
+      const c = await db.collection('courses').findOne({ _id: new ObjectId(courseId) });
+      if (!c) return res.status(404).json({ error: 'Course not found' });
+    }
+
+    const $set = {};
+    if (studentId) $set.studentId = new ObjectId(studentId);
+    if (courseId) $set.courseId = new ObjectId(courseId);
+    if (progress != null) $set.progress = progress;
+
+    const result = await db.collection('enrollments').updateOne({ _id }, { $set });
+    if (result.matchedCount === 0) return res.status(404).json({ error: 'Enrollment not found' });
+
+    const updated = await db.collection('enrollments').findOne({ _id });
+    return res.status(200).json({ message: 'Enrollment updated', enrollment: updated });
+  } catch (e) {
+    console.error('Failed to update enrollment:', e);
+    return res.status(500).json({ error: 'Failed to update enrollment' });
   }
 }
 
@@ -83,9 +95,7 @@ async function dropEnrollment(req, res) {
  */
 async function getEnrollmentsByStudent(req, res) {
   const { id } = req.params;
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ error: 'Invalid student id' });
-  }
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid student id' });
 
   try {
     const db = getDb();
@@ -93,10 +103,10 @@ async function getEnrollmentsByStudent(req, res) {
       .collection('enrollments')
       .find({ studentId: new ObjectId(id) })
       .toArray();
-    res.status(200).json(list);
+    return res.status(200).json(list);
   } catch (err) {
     console.error('Failed to fetch enrollments by student:', err);
-    res.status(500).json({ error: 'Failed to fetch enrollments' });
+    return res.status(500).json({ error: 'Failed to fetch enrollments' });
   }
 }
 
@@ -105,9 +115,7 @@ async function getEnrollmentsByStudent(req, res) {
  */
 async function getEnrollmentsByCourse(req, res) {
   const { id } = req.params;
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ error: 'Invalid course id' });
-  }
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid course id' });
 
   try {
     const db = getDb();
@@ -115,50 +123,61 @@ async function getEnrollmentsByCourse(req, res) {
       .collection('enrollments')
       .find({ courseId: new ObjectId(id) })
       .toArray();
-    res.status(200).json(list);
+    return res.status(200).json(list);
   } catch (err) {
     console.error('Failed to fetch enrollments by course:', err);
-    res.status(500).json({ error: 'Failed to fetch enrollments' });
+    return res.status(500).json({ error: 'Failed to fetch enrollments' });
   }
 }
 
 /**
  * PATCH /enrollments/:id/progress
- * body: { progress: "enrolled" | "in-progress" | "completed" | ... }
  */
 async function updateEnrollmentProgress(req, res) {
   const { id } = req.params;
   const { progress } = req.body || {};
 
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ error: 'Invalid enrollment id' });
-  }
-  if (!progress || typeof progress !== 'string') {
-    return res.status(400).json({ error: 'progress is required (string)' });
-  }
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid enrollment id' });
+  if (!progress || typeof progress !== 'string') return res.status(400).json({ error: 'progress is required (string)' });
 
   try {
     const db = getDb();
     const _id = new ObjectId(id);
 
-    // Update then fetch (most compatible across driver versions)
     const result = await db.collection('enrollments')
       .updateOne({ _id }, { $set: { progress } });
 
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
-    }
+    if (result.matchedCount === 0) return res.status(404).json({ error: 'Enrollment not found' });
 
     const updated = await db.collection('enrollments').findOne({ _id });
-    res.status(200).json({ message: 'Progress updated', enrollment: updated });
+    return res.status(200).json({ message: 'Progress updated', enrollment: updated });
   } catch (err) {
     console.error('Failed to update enrollment:', err);
-    res.status(500).json({ error: 'Failed to update enrollment' });
+    return res.status(500).json({ error: 'Failed to update enrollment' });
+  }
+}
+
+/**
+ * DELETE /enrollments/:id
+ */
+async function dropEnrollment(req, res) {
+  const { id } = req.params;
+  if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid enrollment id' });
+
+  try {
+    const db = getDb();
+    const result = await db.collection('enrollments').deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'Enrollment not found' });
+    return res.status(200).json({ message: 'Enrollment deleted' });
+  } catch (err) {
+    console.error('Failed to delete enrollment:', err);
+    return res.status(500).json({ error: 'Failed to delete enrollment' });
   }
 }
 
 module.exports = {
   enrollStudent,
+  updateEnrollment,
   dropEnrollment,
   getEnrollmentsByStudent,
   getEnrollmentsByCourse,
